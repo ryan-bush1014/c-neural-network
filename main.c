@@ -21,9 +21,10 @@ int main() {
     expected->entries[2] = 1.0f;
     expected->entries[3] = 0.0f;
 
-    for (size_t i = 0; i < 100000; i++)
+    for (size_t i = 0; i < 1000000; i++)
     {
-        printf("Cost: %f\n\n", back_propagate(neural_net, in_matrix, expected, 0.1f));
+        back_propagate(neural_net, in_matrix, expected, 0.5f);
+        // printf("Cost: %f\n\n", back_propagate(neural_net, in_matrix, expected, 0.5f));
     }
 
     print_matrix(eval(neural_net, in_matrix));

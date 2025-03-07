@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall
-LDFLAGS = -lm  # Link the math library
+LDFLAGS = -O3 -lm  # Link the math library
 
 # Target to create the final executable
 my_program: main.o matrix.o neural_net.o
