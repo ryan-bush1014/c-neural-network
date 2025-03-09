@@ -93,7 +93,7 @@ struct neural_net *construct_neural_net(int num_layers, int layers[])
         struct matrix *bias = construct_matrix(layers[layer + 1], 1);
         for (int entry = 0; entry < matrix->size; ++entry)
         {
-            matrix->entries[entry] = randf(-0.1f, 0.1f);
+            matrix->entries[entry] = randf(-0.5f, 0.5f);
         }
         neural_net->weights[layer] = matrix;
         neural_net->biases[layer] = bias;

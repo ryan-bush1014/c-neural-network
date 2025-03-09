@@ -134,7 +134,8 @@ void destruct_matrix(struct matrix *matrix)
 
 void destruct_matrix_array(int size, struct matrix **matrix_array)
 {
-    for (int i = 0; i < size; ++i) {
+    for (int i = 0; i < size; ++i)
+    {
         free(matrix_array[i]);
     }
     free(matrix_array);
@@ -253,6 +254,16 @@ struct matrix *transpose(struct matrix *matrix)
     return transposed_matrix;
 }
 
+struct matrix *slice_row(struct matrix *matrix, int a, int b)
+{
+    struct matrix *new = construct_matrix(b - a, matrix->cols);
+    for (int i = 0; i < new->size; ++i)
+    {
+        new->entries[i] = matrix->entries[i + a * matrix->cols];
+    }
+    return new;
+}
+
 struct matrix *scale_matrix(struct matrix *matrix, float c)
 {
     for (int entry = 0; entry < matrix->size; ++entry)
@@ -287,15 +298,18 @@ float mult(float a, float b)
     return a * b;
 }
 
-struct matrix *hadamard_product(struct matrix *A, struct matrix *B) {
+struct matrix *hadamard_product(struct matrix *A, struct matrix *B)
+{
     return binary_element_wise(A, B, &mult);
 }
 
-struct matrix *matrix_add(struct matrix *A, struct matrix *B) {
+struct matrix *matrix_add(struct matrix *A, struct matrix *B)
+{
     return binary_element_wise(A, B, &add);
 }
 
-struct matrix *matrix_sub(struct matrix *A, struct matrix *B) {
+struct matrix *matrix_sub(struct matrix *A, struct matrix *B)
+{
     return binary_element_wise(A, B, &sub);
 }
 
@@ -308,4 +322,3 @@ float squared_2_norm(struct matrix *matrix)
     }
     return sum;
 }
-

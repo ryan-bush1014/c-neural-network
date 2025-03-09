@@ -23,6 +23,7 @@ struct matrix *copy_matrix(struct matrix *matrix);
 struct matrix *mat_mult(struct matrix *A, struct matrix *B);
 struct matrix *array_to_column(int size, float *arr);
 struct matrix *transpose(struct matrix *matrix);
+struct matrix *slice_row(struct matrix *matrix, int a, int b);
 struct matrix *scale_matrix(struct matrix *matrix, float c);
 struct matrix *matrix_add(struct matrix *A, struct matrix *B);
 struct matrix *matrix_sub(struct matrix *A, struct matrix *B);
