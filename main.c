@@ -1,3 +1,9 @@
+/*
+ * main.c
+ *
+ * This file runs through the classical MNIST example.
+ */
+
 #include "matrix.h"
 #include "neural_net.h"
 #include <string.h>
@@ -98,10 +104,10 @@ void display_mnist_image(struct matrix *images, int col)
     {
         for (int x = 0; x < 28; ++x)
         {
-            float pixel = images->entries[col + (y * 28 + x) * images->cols]; // Get pixel intensity (0-1)
-            int shade_index = (int)(pixel * 9);                               // Map to ASCII shades
+            float pixel = images->entries[col + (y * 28 + x) * images->cols];
+            int shade_index = (int)(pixel * 9);
             putchar(shades[shade_index]);
-            putchar(' '); // Add spacing for readability
+            putchar(shades[shade_index]);
         }
         putchar('\n');
     }
@@ -109,7 +115,7 @@ void display_mnist_image(struct matrix *images, int col)
 
 int main()
 {
-    int layers[] = {784, 10, 10, 10};
+    int layers[] = {784, 16, 16, 10};
     struct neural_net *neural_net = construct_neural_net(4, layers);
 
     int batch_size = 96;

@@ -136,7 +136,7 @@ void destruct_matrix_array(int size, struct matrix **matrix_array)
 {
     for (int i = 0; i < size; ++i)
     {
-        free(matrix_array[i]);
+        destruct_matrix(matrix_array[i]);
     }
     free(matrix_array);
 }

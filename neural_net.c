@@ -86,7 +86,7 @@ struct neural_net *construct_neural_net(int num_layers, int layers[])
     neural_net->num_layers = num_layers;
     neural_net->layers = layers;
     neural_net->weights = malloc((num_layers - 1) * sizeof(struct matrix *));
-    neural_net->biases = malloc((num_layers - 1) * sizeof(float *));
+    neural_net->biases = malloc((num_layers - 1) * sizeof(struct matrix *));
     for (int layer = 0; layer < num_layers - 1; ++layer)
     {
         struct matrix *matrix = construct_matrix(layers[layer + 1], layers[layer]);
@@ -118,6 +118,7 @@ struct neural_net *construct_neural_net(int num_layers, int layers[])
 void destruct_neural_net(struct neural_net *neural_net)
 {
     destruct_matrix_array(neural_net->num_layers - 1, neural_net->weights);
+    destruct_matrix_array(neural_net->num_layers - 1, neural_net->biases);
     free(neural_net);
 }
 
@@ -255,11 +256,10 @@ float back_propagate(struct neural_net *neural_net, struct matrix *in_data, stru
 
         if (layer != 0)
         {
-            struct matrix *dZdA = copy_matrix(neural_net->weights[layer]);
+            struct matrix *dZdA = neural_net->weights[layer];
             struct matrix *dZdA_transposed = transpose(dZdA);
             dCdA[layer - 1] = mat_mult(dZdA_transposed, dCdZ[layer]);
 
-            destruct_matrix(dZdA);
             destruct_matrix(dZdA_transposed);
         }
     }
@@ -268,6 +268,8 @@ float back_propagate(struct neural_net *neural_net, struct matrix *in_data, stru
 
     destruct_matrix_array(neural_net->num_layers - 1, dCdA);
     destruct_matrix_array(neural_net->num_layers - 1, dCdZ);
+    destruct_matrix_array(neural_net->num_layers, activations);
+    destruct_matrix_array(neural_net->num_layers - 1, Z);
 
     return cost;
 }
