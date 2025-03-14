@@ -3,8 +3,6 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdbool.h>
-#include <assert.h>
 
 struct matrix {
     int rows;
@@ -25,6 +23,8 @@ struct matrix *array_to_column(int size, float *arr);
 struct matrix *transpose(struct matrix *matrix);
 struct matrix *slice_row(struct matrix *matrix, int a, int b);
 struct matrix *scale_matrix(struct matrix *matrix, float c);
+struct matrix *binary_element_wise(struct matrix *A, struct matrix *B, float (*fptr)(float, float));
+struct matrix *unary_element_wise(struct matrix *matrix, float (*fptr)(float));
 struct matrix *matrix_add(struct matrix *A, struct matrix *B);
 struct matrix *matrix_sub(struct matrix *A, struct matrix *B);
 struct matrix *hadamard_product(struct matrix *A, struct matrix *B);

@@ -283,6 +283,15 @@ struct matrix *binary_element_wise(struct matrix *A, struct matrix *B, float (*f
     return A;
 }
 
+struct matrix *unary_element_wise(struct matrix *matrix, float (*fptr)(float))
+{
+    for (int entry = 0; entry < matrix->size; ++entry)
+    {
+        matrix->entries[entry] = fptr(matrix->entries[entry]);
+    }
+    return matrix;
+}
+
 float add(float a, float b)
 {
     return a + b;

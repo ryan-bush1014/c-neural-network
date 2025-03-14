@@ -84,7 +84,7 @@ float test_accuracy(struct neural_net *neural_net, struct matrix *input_test, st
             if (test->entries[row * test->cols + col] > max_net)
             {
                 max_index_net = row;
-                max_net = output_test->entries[row * output_test->cols + col];
+                max_net = test->entries[row * output_test->cols + col];
             }
         }
         if (max_index_real == max_index_net)
@@ -116,7 +116,8 @@ void display_mnist_image(struct matrix *images, int col)
 int main()
 {
     int layers[] = {784, 16, 16, 10};
-    struct neural_net *neural_net = construct_neural_net(4, layers);
+    char *activations[3] = {"sigmoid", "sigmoid", "sigmoid"};
+    struct neural_net *neural_net = construct_neural_net(4, layers, activations);
 
     int batch_size = 96;
     int rows_train = 60000;
@@ -135,7 +136,7 @@ int main()
 
     printf("Data loaded. Training...\n");
 
-    int epochs = 5;
+    int epochs = 20;
     for (int epoch = 0; epoch < epochs; ++epoch)
     {
         float cost = 0;
@@ -150,7 +151,7 @@ int main()
 
     int i = 0;
     struct matrix *out = eval(neural_net, inputs_test[0]);
-    while (getchar() != 'e')
+    while (getchar())
     {
         display_mnist_image(inputs_test[0], i);
         for (int row = 0; row < out->rows; ++row)
@@ -169,3 +170,32 @@ int main()
     destruct_neural_net(neural_net);
     return 0;
 }
+
+// int main()
+// {
+//     int layers[] = {2, 3, 1};
+//     char *activations[2] = {"relu", "relu"};
+//     struct neural_net *neural_net = construct_neural_net(3, layers, activations);
+
+//     struct matrix *in_matrix = construct_matrix(2, 4);
+//     in_matrix->entries[0] = 0.0f;
+//     in_matrix->entries[4] = 0.0f;
+//     in_matrix->entries[1] = 0.0f;
+//     in_matrix->entries[5] = 1.0f;
+//     in_matrix->entries[2] = 1.0f;
+//     in_matrix->entries[6] = 0.0f;
+//     in_matrix->entries[3] = 1.0f;
+//     in_matrix->entries[7] = 1.0f;
+
+//     struct matrix *expected = construct_matrix(1, 4);
+//     expected->entries[0] = 0.0f;
+//     expected->entries[1] = 1.0f;
+//     expected->entries[2] = 1.0f;
+//     expected->entries[3] = 0.0f;
+
+//     for (int i = 0; i < 1000000; ++i)
+//     {
+//         back_propagate(neural_net, in_matrix, expected, 0.05);
+//     }
+//     print_matrix(eval(neural_net, in_matrix));
+// }

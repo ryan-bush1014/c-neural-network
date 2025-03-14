@@ -8,8 +8,43 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include "matrix.h"
 #include "neural_net.h"
+
+float sigmoid(float x)
+{
+    return 1.0f / (1.0f + expf(-x));
+}
+
+float sigmoid_derivative(float x)
+{
+    return 1.0f / (1.0f + expf(-x)) * (1.0f - 1.0f / (1.0f + expf(-x)));
+}
+
+float relu(float x)
+{
+    return (x > 0.0f) ? x : 0.01f * x;
+}
+
+float relu_derivative(float x)
+{
+    return (x > 0.0f) ? 1.0f : 0.01f;
+}
+
+float my_tanh(float x) {
+    return tanhf(x);
+}
+
+float my_tanh_derivative(float x) {
+    float tanh_x = tanhf(x);
+    return 1.0f - tanh_x * tanh_x;
+}
+
+const int num_a_functions = 3;
+const char* a_functions_str[3] = {"sigmoid", "relu", "tanh"}; 
+const float (*a_functions_f[3])(float) = {&sigmoid, &relu, &my_tanh};
+const float (*a_functions_f_der[3])(float) = {&sigmoid_derivative, &relu_derivative, &my_tanh_derivative};
 
 /*
  * print_neural_net
@@ -80,13 +115,15 @@ float randf(float a, float b)
  * Side effects:
  * Allocates memory for the neural network structure and its weights.
  */
-struct neural_net *construct_neural_net(int num_layers, int layers[])
+struct neural_net *construct_neural_net(int num_layers, int layers[], char **activations)
 {
     struct neural_net *neural_net = malloc(sizeof(struct neural_net));
     neural_net->num_layers = num_layers;
     neural_net->layers = layers;
     neural_net->weights = malloc((num_layers - 1) * sizeof(struct matrix *));
     neural_net->biases = malloc((num_layers - 1) * sizeof(struct matrix *));
+    neural_net->activations = malloc((num_layers - 1) * sizeof(float (*)(float)));
+    neural_net->activations_derivatives = malloc((num_layers - 1) * sizeof(float (*)(float)));
     for (int layer = 0; layer < num_layers - 1; ++layer)
     {
         struct matrix *matrix = construct_matrix(layers[layer + 1], layers[layer]);
@@ -97,6 +134,14 @@ struct neural_net *construct_neural_net(int num_layers, int layers[])
         }
         neural_net->weights[layer] = matrix;
         neural_net->biases[layer] = bias;
+
+        for (int i = 0; i < num_a_functions; ++i) {
+            if(strcmp(a_functions_str[i], activations[layer]) == 0) {
+                neural_net->activations[layer] = a_functions_f[i];
+                neural_net->activations_derivatives[layer] = a_functions_f_der[i];
+                break;
+            }
+        }
     }
     return neural_net;
 }
@@ -120,52 +165,6 @@ void destruct_neural_net(struct neural_net *neural_net)
     destruct_matrix_array(neural_net->num_layers - 1, neural_net->weights);
     destruct_matrix_array(neural_net->num_layers - 1, neural_net->biases);
     free(neural_net);
-}
-
-/*
- * sigmoid
- *
- * Applies the sigmoid function to each element of a matrix.
- *
- * Parameters:
- * output: A pointer to the matrix to which the sigmoid function will be applied.
- *
- * Returns:
- * None.
- *
- * Side effects:
- * Modifies the matrix entries in place.
- */
-struct matrix *sigmoid(struct matrix *matrix)
-{
-    for (int i = 0; i < matrix->size; ++i)
-    {
-        matrix->entries[i] = 1.0f / (1.0f + expf(-matrix->entries[i]));
-    }
-    return matrix;
-}
-
-/*
- * sigmoid_derivative
- *
- * Applies the derivative of the sigmoid function to each element of a matrix.
- *
- * Parameters:
- * output: A pointer to the matrix to which the derivative will be applied.
- *
- * Returns:
- * None.
- *
- * Side effects:
- * Modifies the matrix entries in place.
- */
-struct matrix *sigmoid_derivative(struct matrix *matrix)
-{
-    for (int i = 0; i < matrix->size; ++i)
-    {
-        matrix->entries[i] = 1.0f / (1.0f + expf(-matrix->entries[i])) * (1.0f - 1.0f / (1.0f + expf(-matrix->entries[i])));
-    }
-    return matrix;
 }
 
 /*
@@ -197,11 +196,14 @@ struct matrix *eval(struct neural_net *neural_net, struct matrix *in_data)
                 current->entries[row * current->cols + col] += (((neural_net->biases)[layer])->entries)[row];
             }
         }
-        sigmoid(current);
+        unary_element_wise(current, neural_net->activations[layer]);
         destruct_matrix(old);
     }
     return current;
 }
+
+
+// TODO make activation and derivative be vectorized functions. apply to columns to create array.
 
 float back_propagate(struct neural_net *neural_net, struct matrix *in_data, struct matrix *expected, float learning_rate)
 {
@@ -221,7 +223,7 @@ float back_propagate(struct neural_net *neural_net, struct matrix *in_data, stru
             }
         }
 
-        activations[layer + 1] = sigmoid(copy_matrix(Z[layer]));
+        activations[layer + 1] = unary_element_wise(copy_matrix(Z[layer]), neural_net->activations[layer]);
     }
 
     struct matrix **dCdA = calloc(neural_net->num_layers - 1, sizeof(struct matrix *));
@@ -230,7 +232,7 @@ float back_propagate(struct neural_net *neural_net, struct matrix *in_data, stru
     dCdA[neural_net->num_layers - 2] = matrix_sub(copy_matrix(activations[neural_net->num_layers - 1]), expected);
     for (int layer = neural_net->num_layers - 2; layer >= 0; --layer)
     {
-        struct matrix *dAdZ = sigmoid_derivative(copy_matrix(Z[layer]));
+        struct matrix *dAdZ = unary_element_wise(copy_matrix(Z[layer]), neural_net->activations_derivatives[layer]);
         dCdZ[layer] = hadamard_product(copy_matrix(dCdA[layer]), dAdZ);
 
         struct matrix *dZdW = copy_matrix(activations[layer]);
@@ -273,31 +275,3 @@ float back_propagate(struct neural_net *neural_net, struct matrix *in_data, stru
 
     return cost;
 }
-
-//  // Compute output error
-//  struct matrix *dCdA = matrix_sub(copy_matrix(activations[neural_net->num_layers - 1]), expected);
-
-//  // all of the following works as long as I have the current layers dCdA
-//  struct matrix *dAdZ = sigmoid_derivative(copy_matrix(Z[neural_net->num_layers - 2]));
-//  struct matrix *dCdZ = hadamard_product(copy_matrix(dCdA), dAdZ);
-//  // dZij/dWkl = 0 if k neq i, A-1lj
-//  struct matrix *dZdW = copy_matrix(activations[neural_net->num_layers - 2]);
-//  struct matrix *dZdW_transposed = transpose(dZdW);
-//  struct matrix *dCdW = mat_mult(dCdZ, dZdW_transposed);
-//  // struct matrix *dCdB = mat_mult(dCdZ, dZdW_transposed);
-//  // dCdB_i = sum_l dCdZil
-//  struct matrix *ones = construct_matrix(dCdZ->rows, 1);
-//  for (size_t entry = 0; entry < ones->size; entry++)
-//  {
-//      ones->entries[entry] = 1.0f;
-//  }
-//  struct matrix *dCdB = mat_mult(dCdZ, ones);
-
-//  // across layers we have dCdZ, dCdA
-
-//  //                  | we know    | we don't know
-//  // dCdAij = transpose(W) dCdZ
-//  // dZ+1kjdAij = Wki
-//  struct matrix *dZdA = copy_matrix(neural_net->weights[neural_net->num_layers - 2]);
-//  struct matrix *dZdA_transposed = transpose(dZdA);
-//  struct matrix *dCdA = mat_mult(dZdA_transposed, dCdZ);
